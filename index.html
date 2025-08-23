@@ -470,14 +470,49 @@
                 display: none !important;
             }
         }
+
+        /* --- Responsive Styles --- */
+        @media (max-width: 768px) {
+            /* Make calendar and summary table scrollable horizontally on mobile */
+            #calendar-print-section > .flex-grow,
+            #summary-table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch; /* Smooth scrolling for iOS */
+                scrollbar-width: thin; /* Firefox */
+                scrollbar-color: #f59e0b #fef3c7; /* Firefox */
+            }
+
+            /* Style scrollbar for Webkit browsers (Chrome, Safari) */
+            #calendar-print-section > .flex-grow::-webkit-scrollbar,
+            #summary-table-container::-webkit-scrollbar {
+                height: 8px;
+            }
+            #calendar-print-section > .flex-grow::-webkit-scrollbar-track,
+            #summary-table-container::-webkit-scrollbar-track {
+                background: #fef3c7;
+            }
+            #calendar-print-section > .flex-grow::-webkit-scrollbar-thumb,
+            #summary-table-container::-webkit-scrollbar-thumb {
+                background-color: #f59e0b;
+                border-radius: 10px;
+                border: 2px solid #fef3c7;
+            }
+
+            #calendar-container {
+                min-width: 900px; /* Force calendar to be wide to prevent squishing */
+            }
+            .summary-table {
+                min-width: 1200px; /* Force summary table to be wide */
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <div class="mx-[50px] py-4 md:py-8">
+    <div class="mx-4 md:mx-8 lg:mx-[50px] py-4 md:py-8">
         <div class="w-full">
-            <header class="bg-gradient-to-r from-blue-800 to-blue-600 text-white p-4 flex items-center rounded-xl shadow-lg mb-8 no-print">
-                <div class="flex-shrink-0 w-48 text-center">
+            <header class="bg-gradient-to-r from-blue-800 to-blue-600 text-white p-4 flex flex-col md:flex-row items-center rounded-xl shadow-lg mb-8 no-print">
+                <div class="flex-shrink-0 w-full md:w-48 text-center mb-4 md:mb-0">
                     <img src="https://i.postimg.cc/YStWH6PQ/Logo-LT.jpg" alt="Labtech Logo" class="h-20 w-auto mx-auto" onerror="this.style.display='none'; this.parentElement.innerHTML = 'LT'">
                     <p class="text-xs text-blue-300 mt-2 italic">Design app by : Paul Ryndel</p>
                 </div>
@@ -487,7 +522,7 @@
                     <p id="inspirational-quote" class="text-blue-200 mt-2 text-sm italic">"The only way to do great work is to love what you do."</p>
                 </div>
             
-                <div id="datetime-container" class="flex-shrink-0 w-48 text-right font-sans">
+                <div id="datetime-container" class="flex-shrink-0 w-full md:w-48 text-center md:text-right font-sans mt-4 md:mt-0">
                     <div id="date-display" class="font-semibold text-md"></div>
                     <div id="time-display" class="font-mono text-xl tracking-wider"></div>
                 </div>
@@ -997,9 +1032,8 @@
                                         tag.innerHTML = `
                                             <div class="tech-tag-info">
                                                 <span class="tech-tag-name">${tech}</span>
-                                                <span class="tech-tag-details">${job.Customer || ''} - ${job.Type || ''}</span>
+                                                <span class="tech-tag-details">${job.Type || ''}</span>
                                             </div>
-                                            ${isConfirmed ? '<span class="checkmark">✓</span>' : ''}
                                         `;
                                     }
                                     listDiv.appendChild(tag);
