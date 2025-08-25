@@ -194,15 +194,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const month = currentDate.getMonth();
         monthYearEl.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
         calendarContainerEl.innerHTML = '';
-        
+
         const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         daysOfWeek.forEach(day => {
             const headerEl = document.createElement('div');
-            let classList = ['text-center', 'font-bold', 'bg-yellow-500', 'rounded-md', 'h-4', 'flex', 'items-center', 'justify-center', 'text-xs'];
-            if (day === 'Sun') classList.push('text-red-700');
-            else if (day === 'Sat') classList.push('text-blue-700');
-            else classList.push('text-white');
-            headerEl.className = classList.join(' ');
+            headerEl.className = 'text-center font-bold bg-yellow-500 rounded-md h-4 flex items-center justify-center text-xs text-white';
             headerEl.textContent = day;
             calendarContainerEl.appendChild(headerEl);
         });
@@ -226,11 +222,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (year === today.getFullYear() && month === today.getMonth() && i === today.getDate()) dayDiv.classList.add('today');
 
             const currentDay = new Date(year, month, i).getDay();
-            
-            if (currentDay === 0) { // Sunday
+
+            if (currentDay === 0) {
                 dayDiv.classList.add('sunday-off');
                 dayContent.innerHTML = '';
-            } else { // Other days
+            } else {
                 const dayEvents = (events[dateStr] || []).filter(event => {
                     const techMatch = activeFilters.Technician.size === 0 || activeFilters.Technician.has(event.Technician);
                     const assignedByMatch = activeFilters['Assigned By'].size === 0 || activeFilters['Assigned By'].has(event['Assigned By']);
@@ -243,67 +239,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     dayDiv.addEventListener('click', () => showEventModal(dateStr));
                 }
 
-                const allTechs = new Set(Object.keys(technicianColors));
-                const jobsByStatus = {};
-                const scheduledTechs = new Set();
-
+                // Only show Technician and Type
                 dayEvents.forEach(event => {
                     if (event.Technician) {
-                        const status = event.Status || 'On Plan';
-                        if (!jobsByStatus[status]) jobsByStatus[status] = [];
-                        jobsByStatus[status].push(event);
-                        scheduledTechs.add(event.Technician);
-                    }
-                });
-
-                const unscheduledTechs = new Set(
-                    [...allTechs].filter(tech => 
-                        !scheduledTechs.has(tech) && 
-                        !excludedFromAvailable.includes(tech) &&
-                        (activeFilters.Technician.size === 0 || activeFilters.Technician.has(tech))
-                    )
-                );
-
-                if (unscheduledTechs.size > 0) {
-                    jobsByStatus['Available'] = Array.from(unscheduledTechs).map(tech => ({ Technician: tech, Status: 'Available' }));
-                }
-                
-                const statusesToRender = activeFilters.Status.size > 0 ? statusOrder.filter(s => activeFilters.Status.has(s)) : statusOrder;
-
-                statusesToRender.forEach(status => {
-                    if (jobsByStatus[status]) {
-                        const groupDiv = document.createElement('div');
-                        groupDiv.className = 'status-group';
-                        const labelDiv = document.createElement('div');
-                        labelDiv.className = 'status-label';
-                        labelDiv.textContent = status;
-                        const colors = statusColors[status] || { bg: '#f3f4f6', text: '#6b7280' };
-                        labelDiv.style.backgroundColor = colors.bg;
-                        labelDiv.style.color = colors.text;
-                        const listDiv = document.createElement('div');
-                        listDiv.className = 'tech-list';
-                        jobsByStatus[status].forEach(job => {
-                            const tag = document.createElement('div');
-                            tag.className = 'tech-tag';
-                            const tech = job.Technician;
-                            const isConfirmed = job['Customer confirmed'] === 'Confirmed';
-                            if (status === 'Available') {
-                                tag.style.backgroundColor = '#d1d5db';
-                                tag.innerHTML = `<span class="tech-tag-name">${tech}</span>`;
-                            } else {
-                                tag.style.backgroundColor = technicianColors[tech] || '#cccccc';
-                                tag.innerHTML = `
-                                    <div class="tech-tag-info">
-                                        <span class="tech-tag-name">${tech}</span>
-                                        <span class="tech-tag-details">${job.Customer || ''} - ${job.Type || ''}</span>
-                                    </div>
-                                    ${isConfirmed ? '<span class="checkmark">✓</span>' : ''}
-                                `;
-                            }
-                            listDiv.appendChild(tag);
-                        });
-                        groupDiv.append(labelDiv, listDiv);
-                        dayContent.appendChild(groupDiv);
+                        const tag = document.createElement('div');
+                        tag.className = 'tech-tag';
+                        tag.style.backgroundColor = technicianColors[event.Technician] || '#cccccc';
+                        tag.innerHTML = `
+                            <span class="tech-tag-name">${event.Technician}</span>
+                            <span class="tech-tag-details">${event.Type || ''}</span>
+                        `;
+                        dayContent.appendChild(tag);
                     }
                 });
             }
@@ -1570,7 +1516,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reportTab.classList.remove('active');
         ganttView.classList.remove('hidden');
         calendarView.classList.add('hidden');
-        reportView.classList.add('hidden');
+               reportView.classList.add('hidden');
     });
 
     reportTab.addEventListener('click', () => {
@@ -1583,8 +1529,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderReportCharts();
     });
     
-    // Gantt control listeners
-    ganttStartDateInput.addEventListener('change', renderGanttChart);
+    // Gantt control listeners    ganttStartDateInput.addEventListener('change', renderGanttChart);
     ganttEndDateInput.addEventListener('change', renderGanttChart);
     ganttSortSelect.addEventListener('change', renderGanttChart);
     ganttViewModeRadios.forEach(radio => {
