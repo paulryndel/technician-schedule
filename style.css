@@ -212,14 +212,12 @@ body {
     border-radius: 4px;
     border: 1px solid black;
 }
-/* --- MODIFICATION START --- */
 /* Make the first header cell (Technician) sticky */
 .summary-header:first-child {
     position: sticky;
     left: 0;
     z-index: 2;
 }
-/* --- MODIFICATION END --- */
 .summary-cell {
     padding: 4px;
     background-color: #fff;
@@ -232,18 +230,47 @@ body {
     padding: 8px 4px;
     text-align: center;
     background-color: #f3f4f6;
-    /* --- MODIFICATION START --- */
     /* Make the technician data cells sticky */
     position: sticky;
     left: 0;
     z-index: 1;
-    /* --- MODIFICATION END --- */
 }
 .summary-job {
     font-size: 0.85rem;
     padding: 2px;
     border-bottom: 1px solid #f3f4f6;
 }
+
+/* --- MODIFICATION START: Removed old line-clamp and added new structured styles --- */
+.job-details-wrapper {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 100%;
+}
+.job-line-1 {
+    display: flex;
+    width: 100%;
+}
+.job-work-id {
+    flex-shrink: 0;
+    margin-right: 0.25rem;
+}
+.job-customer-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+}
+.job-line-2 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+/* --- MODIFICATION END --- */
+
 .mini-calendar {
     font-size: 0.6rem;
 }
@@ -525,5 +552,51 @@ body {
     #datetime-container, header .flex-shrink-0 {
         width: 100%;
         text-align: center !important;
+    }
+}
+
+/* --- Monthly Report Responsiveness --- */
+
+/* For smaller tablet screens and large phones */
+@media (max-width: 768px) {
+    .summary-table {
+        font-size: 0.8rem; /* Base font for the table */
+    }
+    .summary-job {
+        font-size: 0.75rem; /* Job details text */
+    }
+    .summary-cell-tech .w-20 { /* Targeting the technician photo container */
+        width: 4.5rem; /* 72px */
+        height: 4.5rem;
+    }
+    .mini-calendar {
+        font-size: 0.55rem;
+    }
+}
+
+/* For very small mobile screens */
+@media (max-width: 480px) {
+    .summary-table {
+        font-size: 0.75rem;
+    }
+    .summary-job {
+        font-size: 0.7rem;
+    }
+    .summary-cell-tech .w-20 { /* Targeting the technician photo container */
+        width: 4rem; /* 64px */
+        height: 4rem;
+    }
+    .mini-calendar {
+        font-size: 0.5rem;
+    }
+}
+
+/* For large desktop screens for better readability */
+@media (min-width: 1280px) {
+    .summary-table {
+        font-size: 1rem; /* Larger base font */
+    }
+    .summary-job {
+        font-size: 0.9rem;
     }
 }

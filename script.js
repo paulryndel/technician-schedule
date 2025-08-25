@@ -961,12 +961,21 @@ document.addEventListener('DOMContentLoaded', () => {
                                 dateString = 'N/A';
                             }
                             
+                            // --- MODIFICATION START ---
+                            // Restructured the HTML to have separate elements for each piece of data
                             jobDiv.innerHTML = `
                                 <span class="w-6 shrink-0 text-right pr-2">${index + 1}.</span>
-                                <div>
-                                    <b>${workId}</b>  :  <span class="font-semibold">${customer}</span> | ${dateString} | ${type}
+                                <div class="job-details-wrapper">
+                                    <div class="job-line-1">
+                                        <b class="job-work-id">${workId}:</b>
+                                        <span class="job-customer-name">${customer}</span>
+                                    </div>
+                                    <div class="job-line-2">
+                                        <span>${dateString} | ${type}</span>
+                                    </div>
                                 </div>
                             `;
+                            // --- MODIFICATION END ---
                             statusCell.appendChild(jobDiv);
                         });
                     }
@@ -1063,10 +1072,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderFilters(processedGlobalData);
                 updateViews();
 
-                // --- MODIFICATION START ---
                 // Switch to Gantt Chart view by default after file upload
                 ganttTab.click();
-                // --- MODIFICATION END ---
                 
             } catch (error) {
                 console.error("Error processing Excel file:", error);
