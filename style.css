@@ -11,9 +11,10 @@ body {
 }
 .calendar-grid {
     display: grid;
-    /* Sunday (1fr) is 1/3rd the width of other days (3fr) */
-    grid-template-columns: 1fr repeat(6, 3fr);
-    gap: 2px; /* Reduced gap */
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    width: 100%;
+    min-width: 0;
 }
 .calendar-grid-body {
      grid-auto-rows: 1fr; /* Makes all data rows equal height */
@@ -23,10 +24,14 @@ body {
     display: flex;
     flex-direction: column;
     position: relative;
-    min-height: 180px; /* A minimum height for a good look */
     border: 1px solid #e5e7eb;
     border-radius: 0.5rem;
-    background-color: white; /* Keep calendar days white for contrast */
+    background-color: white;
+    min-height: 12vw;   /* Responsive height */
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0.5vw;
 }
 .day:hover {
     transform: scale(1.05);
@@ -59,6 +64,9 @@ body {
     gap: 8px; /* Space between status groups */
     flex-grow: 1;
     overflow-y: auto;
+    flex-wrap: wrap;         /* NEW: allow wrapping */
+    min-width: 0;            /* NEW: fix flex overflow */
+    max-height: 120px;       /* NEW: limit height, show scroll if needed */
 }
 .day-with-event {
     cursor: pointer;
@@ -77,6 +85,10 @@ body {
     flex-direction: row;
     align-items: flex-start;
     gap: 4px;
+    flex-wrap: wrap;         /* NEW: allow wrapping */
+    overflow-x: auto;        /* NEW: horizontal scroll if needed */
+    width: 100%;
+    min-width: 0;
 }
 .status-label {
     writing-mode: vertical-rl;
@@ -456,5 +468,136 @@ body {
     }
     .no-print {
         display: none !important;
+    }
+}
+
+/* --- Responsive Styles for Calendar & Summary Table --- */
+@media (max-width: 900px) {
+    .calendar-grid,
+    .calendar-grid-body {
+        font-size: 0.85rem;
+    }
+    .day {
+        min-height: 16vw;
+        padding: 0.7vw;
+    }
+    .day-number {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+    }
+    .status-label {
+        font-size: 0.6rem;
+        padding: 2px 1px;
+    }
+    .tech-tag {
+        font-size: 0.6rem;
+        padding: 1px 3px;
+    }
+    .tech-tag-details {
+        font-size: 0.5rem;
+        padding-left: 2px;
+    }
+    .summary-table {
+        font-size: 0.8rem;
+    }
+    .summary-header {
+        padding: 4px 2px;
+        font-size: 0.85em;
+    }
+    .summary-cell {
+        min-height: 28px;
+        padding: 2px;
+    }
+    .summary-cell-tech {
+        padding: 4px 2px;
+    }
+    .summary-job {
+        font-size: 0.75rem;
+        padding: 1px;
+    }
+    .mini-calendar {
+        font-size: 0.5rem;
+    }
+    .gantt-tech-photo {
+        width: 24px;
+        height: 24px;
+        margin-right: 4px;
+    }
+}
+
+@media (max-width: 600px) {
+    .calendar-grid,
+    .calendar-grid-body {
+        font-size: 0.7rem;
+    }
+    .day {
+        min-height: 22vw;
+        padding: 1vw;
+    }
+    .day-number {
+        font-size: 0.6rem;
+        padding: 1px 4px;
+    }
+    .day-content {
+        padding: 18px 1px 1px 1px;
+        gap: 2px;
+    }
+    .status-label {
+        font-size: 0.5rem;
+        padding: 1px 1px;
+    }
+    .tech-tag {
+        font-size: 0.5rem;
+        padding: 0 2px;
+    }
+    .tech-tag-details {
+        font-size: 0.45rem;
+        padding-left: 1px;
+    }
+    .summary-table {
+        font-size: 0.65rem;
+    }
+    .summary-header {
+        padding: 2px 1px;
+        font-size: 0.7em;
+    }
+    .summary-cell {
+        min-height: 18px;
+        padding: 1px;
+    }
+    .summary-cell-tech {
+        padding: 2px 1px;
+    }
+    .summary-job {
+        font-size: 0.6rem;
+        padding: 0;
+    }
+    .mini-calendar {
+        font-size: 0.4rem;
+    }
+    .gantt-tech-photo {
+        width: 16px;
+        height: 16px;
+        margin-right: 2px;
+    }
+    .report-card {
+        padding: 0.5rem;
+    }
+}
+
+/* Make summary table scrollable horizontally on very small screens */
+@media (max-width: 600px) {
+    .summary-table {
+        overflow-x: auto;
+        display: block;
+        min-width: 500px;
+    }
+}
+
+/* Optional: Hide some less important details on very small screens */
+@media (max-width: 400px) {
+    .tech-tag-details,
+    .summary-job b {
+        display: none;
     }
 }
