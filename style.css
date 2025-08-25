@@ -11,10 +11,11 @@ body {
 }
 .calendar-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    /* --- MODIFICATION START --- */
+    /* Changed to a responsive 7-column grid */
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    /* --- MODIFICATION END --- */
     gap: 2px;
-    width: 100%;
-    min-width: 0;
 }
 .calendar-grid-body {
      grid-auto-rows: 1fr; /* Makes all data rows equal height */
@@ -24,14 +25,12 @@ body {
     display: flex;
     flex-direction: column;
     position: relative;
+    /* --- MODIFICATION START --- */
+    min-height: 150px; /* Adjusted minimum height */
+    /* --- MODIFICATION END --- */
     border: 1px solid #e5e7eb;
     border-radius: 0.5rem;
     background-color: white;
-    min-height: 12vw;   /* Responsive height */
-    min-width: 0;
-    max-width: 100%;
-    box-sizing: border-box;
-    padding: 0.5vw;
 }
 .day:hover {
     transform: scale(1.05);
@@ -43,52 +42,45 @@ body {
     top: 8px;
     right: 8px;
     font-size: 0.8rem;
-    font-weight: 700; /* Bold numbers */
+    font-weight: 700;
     color: #374151;
-    background-color: #f3f4f6; /* Light gray background */
-    border-radius: 9999px; /* Pill shape */
+    background-color: #f3f4f6;
+    border-radius: 9999px;
     padding: 4px 8px;
     min-width: 28px;
     text-align: center;
 }
 .today .day-number {
-    color: #92400e; /* Darker text for better contrast on yellow */
+    color: #92400e;
     background-color: #fde68a;
     border-radius: 9999px;
     padding: 4px 8px;
 }
 .day-content {
-    padding: 40px 4px 4px 4px; /* Increased top padding */
+    padding: 40px 4px 4px 4px;
     display: flex;
     flex-direction: column;
-    gap: 8px; /* Space between status groups */
+    gap: 8px;
     flex-grow: 1;
     overflow-y: auto;
-    flex-wrap: wrap;         /* NEW: allow wrapping */
-    min-width: 0;            /* NEW: fix flex overflow */
-    max-height: 120px;       /* NEW: limit height, show scroll if needed */
 }
 .day-with-event {
     cursor: pointer;
 }
 .today {
-    background-color: #fef3c7; /* Light yellow background for today */
-    border-color: #f59e0b; /* Amber border */
+    background-color: #fef3c7;
+    border-color: #f59e0b;
     animation: glow 2s infinite alternate;
 }
 .sunday-off {
-    background-color: #fee2e2; /* Light red background */
-    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); /* Red shadow */
+    background-color: #fee2e2;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
 }
 .status-group {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
     gap: 4px;
-    flex-wrap: wrap;         /* NEW: allow wrapping */
-    overflow-x: auto;        /* NEW: horizontal scroll if needed */
-    width: 100%;
-    min-width: 0;
 }
 .status-label {
     writing-mode: vertical-rl;
@@ -117,24 +109,31 @@ body {
     font-size: 0.65rem;
     text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
     width: 100%;
-    white-space: nowrap;
+    /* --- MODIFICATION START --- */
+    /* Removed white-space: nowrap to allow wrapping */
+    /* --- MODIFICATION END --- */
     flex-shrink: 0;
 }
 .tech-tag-info {
     display: flex;
     align-items: center;
     overflow: hidden;
+    /* --- MODIFICATION START --- */
+    flex-wrap: wrap; /* Allow content inside to wrap */
+    /* --- MODIFICATION END --- */
 }
 .tech-tag-name {
     font-weight: 600;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    /* --- MODIFICATION START --- */
+    /* Allow wrapping by removing overflow restrictions */
+    /* --- MODIFICATION END --- */
 }
 .tech-tag-details {
     font-size: 0.6rem;
     opacity: 0.9;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    /* --- MODIFICATION START --- */
+    /* Allow wrapping by removing overflow restrictions */
+    /* --- MODIFICATION END --- */
     padding-left: 4px;
 }
 .checkmark {
@@ -192,6 +191,12 @@ body {
         box-shadow: 0 0 15px #facc15, 0 0 20px #facc15;
     }
 }
+/* Added overflow-x: auto to handle wide tables */
+#summary-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling for iOS */
+}
+
 .summary-table {
     display: grid;
     grid-template-columns: 1fr repeat(6, 2fr);
@@ -207,6 +212,14 @@ body {
     border-radius: 4px;
     border: 1px solid black;
 }
+/* --- MODIFICATION START --- */
+/* Make the first header cell (Technician) sticky */
+.summary-header:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+}
+/* --- MODIFICATION END --- */
 .summary-cell {
     padding: 4px;
     background-color: #fff;
@@ -219,6 +232,12 @@ body {
     padding: 8px 4px;
     text-align: center;
     background-color: #f3f4f6;
+    /* --- MODIFICATION START --- */
+    /* Make the technician data cells sticky */
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    /* --- MODIFICATION END --- */
 }
 .summary-job {
     font-size: 0.85rem;
@@ -471,133 +490,40 @@ body {
     }
 }
 
-/* --- Responsive Styles for Calendar & Summary Table --- */
-@media (max-width: 900px) {
-    .calendar-grid,
-    .calendar-grid-body {
-        font-size: 0.85rem;
-    }
+/* Added Media Query for Mobile Responsiveness */
+@media (max-width: 768px) {
     .day {
-        min-height: 16vw;
-        padding: 0.7vw;
+        min-height: 120px; /* Shorter cells on mobile */
     }
     .day-number {
-        font-size: 0.7rem;
-        padding: 2px 6px;
+        font-size: 0.7rem; /* Smaller day number */
+        padding: 2px 5px;
+        top: 4px;
+        right: 4px;
     }
     .status-label {
-        font-size: 0.6rem;
-        padding: 2px 1px;
+        font-size: 0.5rem; /* Smaller vertical label */
     }
     .tech-tag {
-        font-size: 0.6rem;
-        padding: 1px 3px;
+        font-size: 0.6rem; /* Smaller text in tags */
+        padding: 2px 3px;
+    }
+    .tech-tag-info {
+        /* Allow technician and type to stack vertically */
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
     }
     .tech-tag-details {
-        font-size: 0.5rem;
-        padding-left: 2px;
+        padding-left: 0; /* Remove padding when stacked */
     }
-    .summary-table {
-        font-size: 0.8rem;
+    /* Adjust header for smaller screens */
+    header {
+        flex-direction: column;
+        gap: 0.5rem;
     }
-    .summary-header {
-        padding: 4px 2px;
-        font-size: 0.85em;
-    }
-    .summary-cell {
-        min-height: 28px;
-        padding: 2px;
-    }
-    .summary-cell-tech {
-        padding: 4px 2px;
-    }
-    .summary-job {
-        font-size: 0.75rem;
-        padding: 1px;
-    }
-    .mini-calendar {
-        font-size: 0.5rem;
-    }
-    .gantt-tech-photo {
-        width: 24px;
-        height: 24px;
-        margin-right: 4px;
-    }
-}
-
-@media (max-width: 600px) {
-    .calendar-grid,
-    .calendar-grid-body {
-        font-size: 0.7rem;
-    }
-    .day {
-        min-height: 22vw;
-        padding: 1vw;
-    }
-    .day-number {
-        font-size: 0.6rem;
-        padding: 1px 4px;
-    }
-    .day-content {
-        padding: 18px 1px 1px 1px;
-        gap: 2px;
-    }
-    .status-label {
-        font-size: 0.5rem;
-        padding: 1px 1px;
-    }
-    .tech-tag {
-        font-size: 0.5rem;
-        padding: 0 2px;
-    }
-    .tech-tag-details {
-        font-size: 0.45rem;
-        padding-left: 1px;
-    }
-    .summary-table {
-        font-size: 0.65rem;
-    }
-    .summary-header {
-        padding: 2px 1px;
-        font-size: 0.7em;
-    }
-    .summary-cell {
-        min-height: 18px;
-        padding: 1px;
-    }
-    .summary-cell-tech {
-        padding: 2px 1px;
-    }
-    .summary-job {
-        font-size: 0.6rem;
-        padding: 0;
-    }
-    .mini-calendar {
-        font-size: 0.4rem;
-    }
-    .gantt-tech-photo {
-        width: 16px;
-        height: 16px;
-        margin-right: 2px;
-    }
-    .report-card {
-        padding: 0.5rem;
-    }
-}
-
-/* Make summary table scrollable horizontally on very small screens */
-@media (max-width: 600px) {
-    .summary-table {
-        overflow-x: auto;
-        display: block;
-        min-width: 500px;
-    }
-}
-
-/* Optional: Hide some less important details on very small screens */
-@media (max-width: 400px) {
-    .tech-tag-details,
-    .summary-job b {
-        display: none;
+    #datetime-container, header .flex-shrink-0 {
+        width: 100%;
+        text-align: center !important;
     }
 }

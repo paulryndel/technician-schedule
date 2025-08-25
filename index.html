@@ -15,7 +15,7 @@
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <div class="mx-[50px] py-4 md:py-8">
+    <div class="mx-4 sm:mx-8 md:mx-12 lg:mx-[50px] py-4 md:py-8">
         <div class="w-full">
             <header class="bg-gradient-to-r from-blue-800 to-blue-600 text-white p-4 flex items-center rounded-xl shadow-lg mb-8 no-print">
                 <div class="flex-shrink-0 w-48 text-center">
@@ -128,10 +128,10 @@
                             <div id="gantt-sort-controls" class="flex items-center space-x-2">
                                 <label for="gantt-sort" class="text-sm font-medium">Sort by:</label>
                                 <select id="gantt-sort" class="p-1 border rounded-md">
+                                    <option value="date" selected>Start Date</option>
                                     <option value="name">Name</option>
-                                    <option value="date">Start Date</option>
                                 </select>
-                            </div>
+                                </div>
                         </div>
                     </div>
                     <div id="gantt-chart-container" class="gantt-container">
