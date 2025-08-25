@@ -100,7 +100,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'Somyod': '#8b5cf6' // Violet
     };
     const statusOrder = ['Working', 'On Plan', 'Holding', 'Booking', 'Completed', 'Available'];
-    // MODIFIED: Removed 'Cleaning' and 'Cancelled' from statusColors
     const statusColors = {
         'Booking':   { bg: '#38bdf8', text: '#ffffff' }, // Sky Blue
         'On Plan':   { bg: '#facc15', text: '#1f2937' }, // Yellow
@@ -110,26 +109,36 @@ document.addEventListener('DOMContentLoaded', () => {
         'Available': { bg: '#d1d5db', text: '#1f2937' }  // Light Grey
     };
 
-    // Helper function to convert Excel date to a JS Date object, avoiding timezone shifts.
+    // --- MODIFICATION START: Helper function to truncate customer names ---
+    const truncateCustomerName = (name) => {
+        if (!name) return 'N/A';
+
+        const words = name.split(' ');
+        let processedName = words.slice(0, 2).join(' ');
+
+        if (processedName.length > 15) {
+            // If the 2-word version is still too long, cut it at 15 chars
+            processedName = processedName.slice(0, 15) + '...';
+        } else if (words.length > 2) {
+            // If the original had more than 2 words, add an ellipsis
+            processedName += '...';
+        }
+        
+        return processedName;
+    };
+    // --- MODIFICATION END ---
+
     const excelDateToJSDate = (excelSerial) => {
         if (excelSerial === null || excelSerial === undefined) return null;
         
-        // Check if it's a number (Excel serial date)
         if (typeof excelSerial === 'number') {
-            // The formula for converting Excel serial numbers to JS timestamp.
-            // (excelSerial - 25569) converts the Excel date to days since 1970-01-01.
-            // Multiplying by 86400000 converts days to milliseconds.
-            // This creates a date object in UTC.
             return new Date((excelSerial - 25569) * 86400000);
         }
 
-        // Check if it's already a Date object (from cellDates:true)
         if (excelSerial instanceof Date) {
-            // It's already a date object, just return a new one at UTC midnight
             return new Date(Date.UTC(excelSerial.getUTCFullYear(), excelSerial.getUTCMonth(), excelSerial.getUTCDate()));
         }
 
-        // If it's a string, try parsing it
         if (typeof excelSerial === 'string') {
             const d = new Date(excelSerial);
             if (!isNaN(d.getTime())) {
@@ -142,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const setupTechnicianColors = (jsonData) => {
         const technicians = new Set(jsonData.filter(r => r.Technician).map(r => r.Technician));
-        technicianColors = { ...specialTechnicianColors }; // Start with special assignments
+        technicianColors = { ...specialTechnicianColors };
         let colorIndex = 0;
 
         Array.from(technicians).sort().forEach(tech => {
@@ -159,7 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ganttLegend.innerHTML = '';
         if (Object.keys(technicianColors).length > 0) {
             legendDiv.classList.remove('hidden');
-            // Main technician legend with photos
             const techniciansToDisplay = Object.keys(technicianColors)
                 .filter(tech => !['Danuporn', 'Tossapol', 'Disorn'].includes(tech))
                 .sort();
@@ -177,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 legendContainer.appendChild(legendItem);
             });
 
-            // Gantt chart status legend
             for (const [status, colors] of Object.entries(statusColors)) {
                  const ganttLegendItem = document.createElement('div');
                 ganttLegendItem.className = 'flex items-center';
@@ -292,8 +299,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 tag.innerHTML = `<span class="tech-tag-name">${tech}</span>`;
                             } else {
                                 tag.style.backgroundColor = technicianColors[tech] || '#cccccc';
-                                // --- MODIFICATION START ---
-                                // Changed to show only Technician and Type
                                 tag.innerHTML = `
                                     <div class="tech-tag-info">
                                         <span class="tech-tag-name">${tech}</span>
@@ -301,7 +306,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                     ${isConfirmed ? '<span class="checkmark">✓</span>' : ''}
                                 `;
-                                // --- MODIFICATION END ---
                             }
                             listDiv.appendChild(tag);
                         });
@@ -348,7 +352,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const grid = document.createElement('div');
         grid.className = 'gantt-grid';
         
-        // --- Header Row ---
         const header = document.createElement('div');
         header.className = 'gantt-header';
         
@@ -356,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         headerLabel.className = 'gantt-tech-label';
         headerLabel.style.position = 'sticky';
         headerLabel.style.top = '0';
-        headerLabel.innerHTML = `<div class="h-[49px] flex items-center">${ganttMode === 'technician' ? 'Technician' : 'Customer'}</div>`; // Match header height
+        headerLabel.innerHTML = `<div class="h-[49px] flex items-center">${ganttMode === 'technician' ? 'Technician' : 'Customer'}</div>`;
         header.appendChild(headerLabel);
 
         const timelineHeaderContainer = document.createElement('div');
@@ -389,7 +392,6 @@ document.addEventListener('DOMContentLoaded', () => {
         header.appendChild(timelineHeaderContainer);
         grid.appendChild(header);
 
-        // --- Data Rows ---
         const jobsInView = processedGlobalData.filter(job => {
             if (!job.processedStartDate || !job.processedEndDate) return false;
             const jobStart = new Date(job.processedStartDate);
@@ -555,12 +557,11 @@ document.addEventListener('DOMContentLoaded', () => {
         ganttChartContainer.appendChild(grid);
     };
     
-
     const showEventModal = (dateStr) => {
         const dateEvents = events[dateStr];
         if (!dateEvents) return;
 
-        const displayDate = new Date(dateStr + 'T12:00:00Z'); // Use noon UTC to ensure correct date display
+        const displayDate = new Date(dateStr + 'T12:00:00Z');
         modalDateEl.textContent = displayDate.toLocaleDateString('default', { timeZone: 'UTC', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         modalEventsEl.innerHTML = '';
         briefingSection.innerHTML = '';
@@ -616,7 +617,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const showJobDetailModal = (job) => {
         const modalContent = jobDetailModal.querySelector('.modal-content');
         
-        // Remove any existing photo
         const existingPhoto = modalContent.querySelector('.job-detail-photo');
         if (existingPhoto) {
             existingPhoto.remove();
@@ -624,7 +624,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         jobDetailContent.innerHTML = '';
         
-        // Add technician photo to the top right
         const photoSrc = technicianPhotos[job.Technician];
         if (photoSrc) {
             const photoContainer = document.createElement('div');
@@ -701,7 +700,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             button.addEventListener('click', (e) => {
                 e.stopPropagation();
-                // Hide other dropdowns
                 document.querySelectorAll('.filter-dropdown').forEach(d => {
                     if (d !== dropdown) d.classList.add('hidden');
                 });
@@ -789,7 +787,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     dayCell.style.color = colorInfo.text || 'black';
                 }
             } else {
-                // Not Sunday and not scheduled, so it's 'Available'
                 const colorInfo = statusColors['Available'];
                 dayCell.style.backgroundColor = colorInfo.bg;
                 dayCell.style.color = colorInfo.text || 'black';
@@ -811,10 +808,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         summarySection.classList.remove('hidden');
         
-        summaryTableContainer.innerHTML = ''; // Clear previous table
+        summaryTableContainer.innerHTML = '';
         
         miniCalendarLegend.innerHTML = '';
-        // MODIFIED: Added check to exclude certain statuses from legend
         Object.entries(statusColors).forEach(([status, colors]) => {
             if (status === 'Cancelled' || status === 'Cleaning') return;
             const legendItem = document.createElement('div');
@@ -822,7 +818,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const colorBox = document.createElement('span');
             colorBox.className = 'w-3 h-3 rounded-sm mr-1';
             colorBox.style.backgroundColor = colors.bg;
-            colorBox.style.border = '1px solid black'; // Added black border
+            colorBox.style.border = '1px solid black';
             legendItem.append(colorBox, document.createTextNode(status));
             miniCalendarLegend.appendChild(legendItem);
         });
@@ -937,7 +933,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             jobDiv.className = 'summary-job text-left p-1 flex items-start';
 
                             const workId = job['Work ID'] || 'N/A';
-                            const customer = job.Customer || 'N/A';
+                            
+                            // --- MODIFICATION START ---
+                            // Use the new truncate function for the customer name
+                            const fullCustomerName = job.Customer || 'N/A';
+                            const customer = truncateCustomerName(fullCustomerName);
+                            // --- MODIFICATION END ---
+                            
                             const type = job.Type || 'N/A';
                             
                             const startDate = job.processedStartDate;
@@ -961,8 +963,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 dateString = 'N/A';
                             }
                             
-                            // --- MODIFICATION START ---
-                            // Restructured the HTML to have separate elements for each piece of data
                             jobDiv.innerHTML = `
                                 <span class="w-6 shrink-0 text-right pr-2">${index + 1}.</span>
                                 <div class="job-details-wrapper">
@@ -975,7 +975,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                 </div>
                             `;
-                            // --- MODIFICATION END ---
                             statusCell.appendChild(jobDiv);
                         });
                     }
@@ -1035,7 +1034,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 processedGlobalData = globalJsonData.map(row => {
                     const newRow = {...row};
-                    // ADD ONE DAY TO DATES
                     let startDate = excelDateToJSDate(row['Plan Start']);
                     if (startDate) {
                         startDate.setUTCDate(startDate.getUTCDate() + 1);
@@ -1072,7 +1070,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderFilters(processedGlobalData);
                 updateViews();
 
-                // Switch to Gantt Chart view by default after file upload
                 ganttTab.click();
                 
             } catch (error) {
@@ -1156,13 +1153,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         });
         
-        // MODIFIED: Added 'Tossapol' to the exclusion list for reports
         const reportTechsToExclude = ['Danuporn', 'Disorn', 'Tossapol'];
         const allTechs = Array.from(new Set(filteredReportData.map(r => r.Technician).filter(Boolean)))
             .filter(tech => !reportTechsToExclude.includes(tech))
             .sort();
 
-        // 1. Job Duration by Grade
         const techGradeDays = {};
         const allGrades = ['A','B','C','D'];
         filteredReportData.forEach(row => {
@@ -1223,14 +1218,11 @@ document.addEventListener('DOMContentLoaded', () => {
             jobDurationLegendEl.innerHTML = legendHTML;
         }
 
-
-        // 2. Technician Skills (Radar Chart for each tech)
         const allPs = ['P1','P2','P3','P4','P5','P6'];
         allTechs.forEach(tech => {
             createTechSkillCard(tech, filteredReportData);
         });
 
-        // 3. Technician Ranking by Average Score
         const techAvgScores = allTechs.map(tech => {
             const scores = filteredReportData
                 .filter(r => r.Technician === tech && r.Score && !isNaN(parseFloat(r.Score)))
@@ -1279,7 +1271,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 4. Country Visits
         countryTechSelect.innerHTML = `<option value="All">All Technicians</option>` + allTechs.map(tech => `<option value="${tech}">${tech}</option>`).join('');
         const updateCountryPie = () => {
             const selectedTech = countryTechSelect.value;
@@ -1314,7 +1305,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCountryPie();
         countryTechSelect.onchange = updateCountryPie;
 
-        // 5. Job Types per Technician
         const allTypes = Array.from(new Set(filteredReportData.map(r=>r.Type).filter(Boolean)))
             .sort();
         chartInstances['job-type-chart'] = new Chart(document.getElementById('job-type-chart'), {
@@ -1339,7 +1329,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 6. All Technicians Spider Chart
         const allTechJobs = filteredReportData.filter(r => allTechs.includes(r.Technician) && r.Score && !isNaN(parseFloat(r.Score)) && parseFloat(r.Score) > 0);
         const allTechAvgs = allPs.map(p => {
             const pValues = allTechJobs.map(r => parseFloat(r[p])).filter(v => !isNaN(v));
@@ -1469,7 +1458,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gradeSelect.onchange = updateCard;
         customerSelect.onchange = updateCard;
 
-        updateCard(); // Initial render
+        updateCard();
     }
 
 
@@ -1542,7 +1531,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     document.addEventListener('click', (e) => {
-        // Hide dropdowns if clicking outside
         if (!e.target.closest('.filter-group')) {
             document.querySelectorAll('.filter-dropdown').forEach(d => d.classList.add('hidden'));
         }
@@ -1599,7 +1587,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderReportCharts();
     });
     
-    // Gantt control listeners
     ganttStartDateInput.addEventListener('change', renderGanttChart);
     ganttEndDateInput.addEventListener('change', renderGanttChart);
     ganttSortSelect.addEventListener('change', renderGanttChart);
@@ -1617,7 +1604,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSummaryTable(newDate);
     });
 
-    // Initial Setup
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
