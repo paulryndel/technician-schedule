@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let technicianColors = {};
     let technicianPhotos = {}; // To store photo URLs/data
     let activeFilters = { Technician: new Set(), 'Assigned By': new Set(), Type: new Set(), Status: new Set() };
-    const excludedFromAvailable = ['Danuporn', 'Disorn', 'Tossapol']; // Technicians to exclude from 'Available' in calendar view
+    const excludedFromAvailable = ['Danuporn', 'Disorn', 'Tossapol', 'Unassigned']; // Technicians to exclude from 'Available' in calendar view
     let ganttMode = 'technician';
     let chartInstances = {}; // To hold chart instances for destruction
     const P_SCORE_MEANINGS = {
@@ -97,7 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const colorPalette = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#a855f7', '#d946ef', '#ec4899'];
     const specialTechnicianColors = {
-        'Somyod': '#8b5cf6' // Violet
+        'Somyod': '#8b5cf6', // Violet
+        'Unassigned': '#9ca3af' // Gray for unassigned jobs
     };
     const statusOrder = ['Working', 'On Plan', 'Holding', 'Booking', 'Completed', 'Available'];
     const statusColors = {
@@ -839,7 +840,11 @@ document.addEventListener('DOMContentLoaded', () => {
             table.appendChild(headerCell);
         });
         
-        const techniciansToDisplay = Object.keys(technicianColors).filter(tech => !excludedFromAvailable.includes(tech)).sort();
+        // --- MODIFICATION START ---
+        // Create a specific exclusion list for the summary report to ensure "Unassigned" is included.
+        const summaryTechsToExclude = ['Danuporn', 'Disorn', 'Tossapol'];
+        const techniciansToDisplay = Object.keys(technicianColors).filter(tech => !summaryTechsToExclude.includes(tech)).sort();
+        // --- MODIFICATION END ---
 
         techniciansToDisplay.forEach(tech => {
             const techCell = document.createElement('div');
@@ -1032,8 +1037,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.warn(`Sheet "${infoSheetName}" not found. No photos will be displayed.`);
                 }
 
+                // --- MODIFICATION START ---
+                // Manually add the 'Unassigned' technician's photo with the new link
+                technicianPhotos['Unassigned'] = 'https://i.postimg.cc/fLzfWbsL/Question-mark.png'; // Question mark icon
+                // --- MODIFICATION END ---
+
                 processedGlobalData = globalJsonData.map(row => {
                     const newRow = {...row};
+                    
+                    // If Technician is blank but dates exist, assign to 'Unassigned'
+                    if (!newRow.Technician && (newRow['Plan Start'] || newRow['Plan Finish'])) {
+                        newRow.Technician = 'Unassigned';
+                    }
+
                     let startDate = excelDateToJSDate(row['Plan Start']);
                     if (startDate) {
                         startDate.setUTCDate(startDate.getUTCDate() + 1);
@@ -1153,7 +1169,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         });
         
-        const reportTechsToExclude = ['Danuporn', 'Disorn', 'Tossapol'];
+        const reportTechsToExclude = ['Danuporn', 'Disorn', 'Tossapol', 'Unassigned'];
         const allTechs = Array.from(new Set(filteredReportData.map(r => r.Technician).filter(Boolean)))
             .filter(tech => !reportTechsToExclude.includes(tech))
             .sort();
