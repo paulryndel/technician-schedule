@@ -93,6 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateDisplayEl = document.getElementById('date-display');
     const timeDisplayEl = document.getElementById('time-display');
     const quoteEl = document.getElementById('inspirational-quote');
+    const loadingOverlay = document.getElementById('loading-overlay');
 
 
     const colorPalette = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#a855f7', '#d946ef', '#ec4899'];
@@ -110,43 +111,32 @@ document.addEventListener('DOMContentLoaded', () => {
         'Available': { bg: '#d1d5db', text: '#1f2937' }  // Light Grey
     };
 
-    // --- MODIFICATION START: Helper function to truncate customer names ---
     const truncateCustomerName = (name) => {
         if (!name) return 'N/A';
-
         const words = name.split(' ');
         let processedName = words.slice(0, 2).join(' ');
-
         if (processedName.length > 15) {
-            // If the 2-word version is still too long, cut it at 15 chars
             processedName = processedName.slice(0, 15) + '...';
         } else if (words.length > 2) {
-            // If the original had more than 2 words, add an ellipsis
             processedName += '...';
         }
-        
         return processedName;
     };
-    // --- MODIFICATION END ---
 
     const excelDateToJSDate = (excelSerial) => {
         if (excelSerial === null || excelSerial === undefined) return null;
-        
         if (typeof excelSerial === 'number') {
             return new Date((excelSerial - 25569) * 86400000);
         }
-
         if (excelSerial instanceof Date) {
             return new Date(Date.UTC(excelSerial.getUTCFullYear(), excelSerial.getUTCMonth(), excelSerial.getUTCDate()));
         }
-
         if (typeof excelSerial === 'string') {
             const d = new Date(excelSerial);
             if (!isNaN(d.getTime())) {
                 return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
             }
         }
-        
         return null;
     };
 
@@ -154,7 +144,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const technicians = new Set(jsonData.filter(r => r.Technician).map(r => r.Technician));
         technicianColors = { ...specialTechnicianColors };
         let colorIndex = 0;
-
         Array.from(technicians).sort().forEach(tech => {
             if (!technicianColors[tech]) {
                 technicianColors[tech] = colorPalette[colorIndex % colorPalette.length];
@@ -185,7 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 legendItem.innerHTML += `<span class="tech-color-dot" style="background-color: ${technicianColors[tech]};"></span><span class="text-sm">${tech}</span>`;
                 legendContainer.appendChild(legendItem);
             });
-
             for (const [status, colors] of Object.entries(statusColors)) {
                  const ganttLegendItem = document.createElement('div');
                 ganttLegendItem.className = 'flex items-center';
@@ -202,7 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const month = currentDate.getMonth();
         monthYearEl.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
         calendarContainerEl.innerHTML = '';
-        
         const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         daysOfWeek.forEach(day => {
             const headerEl = document.createElement('div');
@@ -214,13 +201,10 @@ document.addEventListener('DOMContentLoaded', () => {
             headerEl.textContent = day;
             calendarContainerEl.appendChild(headerEl);
         });
-
         const firstDayOfMonth = new Date(year, month, 1).getDay();
         const lastDateOfMonth = new Date(year, month + 1, 0).getDate();
         const today = new Date();
-
         for (let i = 0; i < firstDayOfMonth; i++) calendarContainerEl.appendChild(document.createElement('div'));
-
         for (let i = 1; i <= lastDateOfMonth; i++) {
             const dayDiv = document.createElement('div');
             dayDiv.className = 'day';
@@ -232,29 +216,24 @@ document.addEventListener('DOMContentLoaded', () => {
             dayDiv.append(dayNumberDiv, dayContent);
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
             if (year === today.getFullYear() && month === today.getMonth() && i === today.getDate()) dayDiv.classList.add('today');
-
             const currentDay = new Date(year, month, i).getDay();
-            
-            if (currentDay === 0) { // Sunday
+            if (currentDay === 0) {
                 dayDiv.classList.add('sunday-off');
                 dayContent.innerHTML = '';
-            } else { // Other days
+            } else {
                 const dayEvents = (events[dateStr] || []).filter(event => {
                     const techMatch = activeFilters.Technician.size === 0 || activeFilters.Technician.has(event.Technician);
                     const assignedByMatch = activeFilters['Assigned By'].size === 0 || activeFilters['Assigned By'].has(event['Assigned By']);
                     const typeMatch = activeFilters.Type.size === 0 || activeFilters.Type.has(event.Type);
                     return techMatch && assignedByMatch && typeMatch;
                 });
-
                 if(dayEvents.length > 0) {
                     dayDiv.classList.add('day-with-event');
                     dayDiv.addEventListener('click', () => showEventModal(dateStr));
                 }
-
                 const allTechs = new Set(Object.keys(technicianColors));
                 const jobsByStatus = {};
                 const scheduledTechs = new Set();
-
                 dayEvents.forEach(event => {
                     if (event.Technician) {
                         const status = event.Status || 'On Plan';
@@ -263,7 +242,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         scheduledTechs.add(event.Technician);
                     }
                 });
-
                 const unscheduledTechs = new Set(
                     [...allTechs].filter(tech => 
                         !scheduledTechs.has(tech) && 
@@ -271,13 +249,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         (activeFilters.Technician.size === 0 || activeFilters.Technician.has(tech))
                     )
                 );
-
                 if (unscheduledTechs.size > 0) {
                     jobsByStatus['Available'] = Array.from(unscheduledTechs).map(tech => ({ Technician: tech, Status: 'Available' }));
                 }
-                
                 const statusesToRender = activeFilters.Status.size > 0 ? statusOrder.filter(s => activeFilters.Status.has(s)) : statusOrder;
-
                 statusesToRender.forEach(status => {
                     if (jobsByStatus[status]) {
                         const groupDiv = document.createElement('div');
@@ -325,19 +300,15 @@ document.addEventListener('DOMContentLoaded', () => {
             ganttChartContainer.innerHTML = '<p class="text-center p-4">Upload an Excel file to see the Gantt Chart.</p>';
             return;
         }
-
         const today = new Date();
         const ganttStartDate = new Date(ganttStartDateInput.value + 'T00:00:00Z');
         const ganttEndDate = new Date(ganttEndDateInput.value + 'T23:59:59Z');
-
         if (isNaN(ganttStartDate) || isNaN(ganttEndDate) || ganttStartDate > ganttEndDate) {
             ganttChartContainer.innerHTML = '<p class="text-center p-4 text-red-500">Invalid date range selected.</p>';
             return;
         }
-
         ganttMonthYearEl.textContent = `Gantt Chart: ${ganttStartDate.toLocaleDateString('default', {timeZone: 'UTC'})} - ${ganttEndDate.toLocaleDateString('default', {timeZone: 'UTC'})}`;
         ganttChartContainer.innerHTML = '';
-
         const allDays = [];
         const monthsInRange = {};
         for (let d = new Date(ganttStartDate); d <= ganttEndDate; d.setUTCDate(d.getUTCDate() + 1)) {
@@ -349,38 +320,30 @@ document.addEventListener('DOMContentLoaded', () => {
             monthsInRange[monthKey].days++;
         }
         const totalDays = allDays.length;
-
         const grid = document.createElement('div');
         grid.className = 'gantt-grid';
-        
         const header = document.createElement('div');
         header.className = 'gantt-header';
-        
         const headerLabel = document.createElement('div');
         headerLabel.className = 'gantt-tech-label';
         headerLabel.style.position = 'sticky';
         headerLabel.style.top = '0';
         headerLabel.innerHTML = `<div class="h-[49px] flex items-center">${ganttMode === 'technician' ? 'Technician' : 'Customer'}</div>`;
         header.appendChild(headerLabel);
-
         const timelineHeaderContainer = document.createElement('div');
         timelineHeaderContainer.className = 'gantt-timeline-header-container';
-        
         const monthHeader = document.createElement('div');
         monthHeader.className = 'gantt-month-header';
         monthHeader.style.gridTemplateColumns = Object.values(monthsInRange).map(m => `${m.days}fr`).join(' ');
-        
         Object.values(monthsInRange).forEach(m => {
             const monthLabel = document.createElement('div');
             monthLabel.className = 'gantt-month-label';
             monthLabel.textContent = m.name;
             monthHeader.appendChild(monthLabel);
         });
-
         const dayHeader = document.createElement('div');
         dayHeader.className = 'gantt-timeline-header';
         dayHeader.style.gridTemplateColumns = `repeat(${totalDays}, 1fr)`;
-
         allDays.forEach(d => {
             const dayLabel = document.createElement('div');
             dayLabel.className = 'gantt-day-label';
@@ -388,26 +351,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (d.getUTCDay() === 0) dayLabel.classList.add('gantt-sunday');
             dayHeader.appendChild(dayLabel);
         });
-
         timelineHeaderContainer.append(monthHeader, dayHeader);
         header.appendChild(timelineHeaderContainer);
         grid.appendChild(header);
-
         const jobsInView = processedGlobalData.filter(job => {
             if (!job.processedStartDate || !job.processedEndDate) return false;
             const jobStart = new Date(job.processedStartDate);
             const jobEnd = new Date(job.processedEndDate);
             if (jobStart > ganttEndDate || jobEnd < ganttStartDate) return false;
-
             const techMatch = activeFilters.Technician.size === 0 || activeFilters.Technician.has(job.Technician);
             const assignedByMatch = activeFilters['Assigned By'].size === 0 || activeFilters['Assigned By'].has(job['Assigned By']);
             const typeMatch = activeFilters.Type.size === 0 || activeFilters.Type.has(job.Type);
             const status = job.Status || 'On Plan';
             const statusMatch = activeFilters.Status.size === 0 || activeFilters.Status.has(status);
-
             return techMatch && assignedByMatch && typeMatch && statusMatch;
         });
-
         let itemsToDisplay;
         if (ganttMode === 'technician') {
             itemsToDisplay = Object.keys(technicianColors)
@@ -430,19 +388,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const dateB = customerStartDateMap.get(b);
                     return dateA - dateB;
                 });
-            } else { // 'name'
+            } else {
                 customerArray.sort();
             }
             itemsToDisplay = customerArray;
         }
-
         itemsToDisplay.forEach(item => {
             const row = document.createElement('div');
             row.className = 'gantt-row';
-
             const itemLabel = document.createElement('div');
             itemLabel.className = 'gantt-tech-label';
-            
             if (ganttMode === 'technician') {
                 const photoSrc = technicianPhotos[item];
                 if (photoSrc) {
@@ -458,11 +413,9 @@ document.addEventListener('DOMContentLoaded', () => {
             nameSpan.textContent = item;
             itemLabel.appendChild(nameSpan);
             row.appendChild(itemLabel);
-
             const timeline = document.createElement('div');
             timeline.className = 'gantt-timeline';
             timeline.style.gridTemplateColumns = `repeat(${totalDays}, 1fr)`;
-
             allDays.forEach((d, index) => {
                 if (d.getUTCDay() === 0) {
                     const sundayMarker = document.createElement('div');
@@ -472,7 +425,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     timeline.appendChild(sundayMarker);
                 }
             });
-
             const todayTime = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
             if (todayTime >= ganttStartDate.getTime() && todayTime <= ganttEndDate.getTime()) {
                 const todayMarker = document.createElement('div');
@@ -481,12 +433,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 todayMarker.style.left = `calc(${(dayOffset / totalDays) * 100}% + (${(1 / totalDays) * 100 / 2}% - 1px))`;
                 timeline.appendChild(todayMarker);
             }
-
             const jobsForItem = jobsInView.filter(job => {
                 const key = ganttMode === 'technician' ? job.Technician : job.Customer;
                 return key === item;
             }).sort((a, b) => a.processedStartDate - b.processedStartDate);
-
             const lanes = [];
             jobsForItem.forEach(job => {
                 let placed = false;
@@ -502,7 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     lanes.push([job]);
                 }
             });
-
             const numLanes = lanes.length || 1;
             lanes.forEach((lane, laneIndex) => {
                 lane.forEach(job => {
@@ -510,10 +459,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     let jobEnd = new Date(job.processedEndDate);
                     jobStart = new Date(Math.max(jobStart, ganttStartDate));
                     jobEnd = new Date(Math.min(jobEnd, ganttEndDate));
-                    
                     const startOffset = (jobStart.getTime() - ganttStartDate.getTime()) / (1000 * 3600 * 24);
                     const duration = (jobEnd.getTime() - jobStart.getTime()) / (1000 * 3600 * 24) + 1;
-                    
                     const bar = document.createElement('div');
                     bar.className = 'gantt-bar';
                     const barHeight = 100 / numLanes;
@@ -526,7 +473,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     bar.style.backgroundColor = statusColorInfo.bg;
                     bar.style.color = statusColorInfo.text;
                     bar.style.zIndex = '10';
-                    
                     if (ganttMode === 'customer') {
                         const photoSrc = technicianPhotos[job.Technician];
                         if (photoSrc) {
@@ -543,33 +489,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         textSpan.textContent = job.Customer || job.Type;
                         bar.appendChild(textSpan);
                     }
-
                     bar.title = `${job.Technician} - ${job.Customer} (${job.Type})\nDuration: ${duration} day(s)\nAssigned by: ${job['Assigned By'] || 'N/A'}\nStatus: ${status}`;
                     bar.addEventListener('click', () => showJobDetailModal(job));
-                    
                     timeline.appendChild(bar);
                 });
             });
-
             row.appendChild(timeline);
             grid.appendChild(row);
         });
-
         ganttChartContainer.appendChild(grid);
     };
     
     const showEventModal = (dateStr) => {
         const dateEvents = events[dateStr];
         if (!dateEvents) return;
-
         const displayDate = new Date(dateStr + 'T12:00:00Z');
         modalDateEl.textContent = displayDate.toLocaleDateString('default', { timeZone: 'UTC', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         modalEventsEl.innerHTML = '';
         briefingSection.innerHTML = '';
-        
         const workingEntries = dateEvents.filter(e => e.Technician);
         const otherEntries = dateEvents.filter(e => !e.Technician);
-
         if (workingEntries.length > 0) {
             const workingDiv = document.createElement('div');
             workingDiv.innerHTML = '<h4 class="text-md font-semibold text-gray-800 mb-2 border-b pb-1">Technician Assignments</h4>';
@@ -592,7 +531,6 @@ document.addEventListener('DOMContentLoaded', () => {
             workingDiv.appendChild(list);
             modalEventsEl.appendChild(workingDiv);
         }
-
         if (otherEntries.length > 0) {
             const otherDiv = document.createElement('div');
             otherDiv.innerHTML = '<h4 class="text-md font-semibold text-gray-800 mt-4 mb-2 border-b pb-1">Other Scheduled Items</h4>';
@@ -617,14 +555,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const showJobDetailModal = (job) => {
         const modalContent = jobDetailModal.querySelector('.modal-content');
-        
         const existingPhoto = modalContent.querySelector('.job-detail-photo');
         if (existingPhoto) {
             existingPhoto.remove();
         }
-
         jobDetailContent.innerHTML = '';
-        
         const photoSrc = technicianPhotos[job.Technician];
         if (photoSrc) {
             const photoContainer = document.createElement('div');
@@ -636,9 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
             photoContainer.appendChild(img);
             modalContent.appendChild(photoContainer);
         }
-
         const displayOrder = ['Customer', 'Technician', 'Type', 'Description', 'Status', 'Plan Start', 'Plan Finish', 'Assigned By'];
-        
         displayOrder.forEach(key => {
             if (job[key]) {
                 const detailRow = document.createElement('div');
@@ -657,7 +590,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 jobDetailContent.appendChild(detailRow);
             }
         });
-
         jobDetailModal.classList.remove('hidden');
     };
 
@@ -673,18 +605,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const renderFilters = (jsonData) => {
         filterContainer.classList.remove('hidden');
-        
         const createFilterDropdown = (items, type) => {
             const container = document.getElementById(`${type.toLowerCase().replace(' ', '-')}-filters`);
             container.innerHTML = '';
-
             const button = document.createElement('button');
             button.className = 'filter-button';
             button.innerHTML = `${type} <span id="${type.toLowerCase().replace(' ', '-')}-badge" class="hidden filter-badge">0</span>`;
-            
             const dropdown = document.createElement('div');
             dropdown.className = 'filter-dropdown hidden';
-            
             items.forEach(item => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center space-x-2 p-1 hover:bg-gray-100 rounded cursor-pointer';
@@ -696,9 +624,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 label.append(checkbox, document.createTextNode(item));
                 dropdown.appendChild(label);
             });
-
             container.append(button, dropdown);
-
             button.addEventListener('click', (e) => {
                 e.stopPropagation();
                 document.querySelectorAll('.filter-dropdown').forEach(d => {
@@ -707,11 +633,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 dropdown.classList.toggle('hidden');
             });
         };
-        
         const technicians = [...new Set(jsonData.filter(r => r.Technician).map(r => r.Technician))].sort();
         const assignedBy = [...new Set(jsonData.filter(r => r['Assigned By']).map(r => r['Assigned By']))].sort();
         const types = [...new Set(jsonData.filter(r => r.Type).map(r => r.Type))].sort();
-
         createFilterDropdown(technicians, 'Technician');
         createFilterDropdown(assignedBy, 'Assigned By');
         createFilterDropdown(types, 'Type');
@@ -736,37 +660,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const createMiniCalendar = (scheduledDates, year, month, dailyJobsMap) => {
         const miniCalContainer = document.createElement('div');
         miniCalContainer.className = 'mini-calendar';
-
         const header = '<div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>';
         miniCalContainer.innerHTML = `<div class="mini-calendar-header">${header}</div>`;
-        
         const body = document.createElement('div');
         body.className = 'mini-calendar-body';
-
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-
         for (let i = 0; i < firstDay; i++) {
             body.innerHTML += '<div></div>';
         }
-
         for (let day = 1; day <= daysInMonth; day++) {
             const dayCell = document.createElement('div');
             dayCell.textContent = day;
-            
             const currentDateObj = new Date(Date.UTC(year, month, day));
             const isSunday = currentDateObj.getUTCDay() === 0;
             const isScheduled = scheduledDates.has(currentDateObj.toDateString());
-
             let classes = ['mini-calendar-day'];
-
             if (isSunday) {
                 classes.push('mini-calendar-sunday');
             } else if (isScheduled) {
                 const jobsForDay = dailyJobsMap.get(day);
                 const uniqueStatuses = [...new Set(jobsForDay.map(job => job.status || 'On Plan'))];
                 const numStatuses = uniqueStatuses.length;
-
                 if (numStatuses === 1) {
                     const colorInfo = statusColors[uniqueStatuses[0]] || statusColors['Available'];
                     dayCell.style.backgroundColor = colorInfo.bg;
@@ -778,7 +693,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         const endPercent = (100 / numStatuses) * (index + 1);
                         return `${color} ${startPercent}% ${endPercent}%`;
                     }).join(', ');
-                    
                     dayCell.style.background = `linear-gradient(to right, ${colorStops})`;
                     dayCell.style.color = 'white';
                     dayCell.style.textShadow = '1px 1px 1px rgba(0,0,0,0.4)';
@@ -792,11 +706,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 dayCell.style.backgroundColor = colorInfo.bg;
                 dayCell.style.color = colorInfo.text || 'black';
             }
-            
             dayCell.className = classes.join(' ');
             body.appendChild(dayCell);
         }
-
         miniCalContainer.appendChild(body);
         return miniCalContainer;
     };
@@ -808,9 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         summarySection.classList.remove('hidden');
-        
         summaryTableContainer.innerHTML = '';
-        
         miniCalendarLegend.innerHTML = '';
         Object.entries(statusColors).forEach(([status, colors]) => {
             if (status === 'Cancelled' || status === 'Cleaning') return;
@@ -823,13 +733,10 @@ document.addEventListener('DOMContentLoaded', () => {
             legendItem.append(colorBox, document.createTextNode(status));
             miniCalendarLegend.appendChild(legendItem);
         });
-
         const table = document.createElement('div');
         table.className = 'summary-table';
-
         ['Technician', ...statusOrder].forEach(headerText => {
             if (headerText === 'Cancelled' || headerText === 'Cleaning') return;
-
             const headerCell = document.createElement('div');
             headerCell.className = 'summary-header';
             headerCell.textContent = headerText;
@@ -839,23 +746,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             table.appendChild(headerCell);
         });
-        
-        // --- MODIFICATION START ---
-        // Create a specific exclusion list for the summary report to ensure "Unassigned" is included.
         const summaryTechsToExclude = ['Danuporn', 'Disorn', 'Tossapol'];
         const techniciansToDisplay = Object.keys(technicianColors).filter(tech => !summaryTechsToExclude.includes(tech)).sort();
-        // --- MODIFICATION END ---
-
         techniciansToDisplay.forEach(tech => {
             const techCell = document.createElement('div');
             techCell.className = 'summary-cell summary-cell-tech flex flex-col items-center justify-center p-2';
             const photoSrc = technicianPhotos[tech];
             const techColor = technicianColors[tech] || '#f3f4f6';
-            
             const photoContainer = document.createElement('div');
             photoContainer.className = 'w-20 h-20 rounded-lg mb-2 border-2 border-white shadow-lg flex items-center justify-center p-1';
             photoContainer.style.backgroundColor = techColor;
-
             if (photoSrc) {
                 const img = document.createElement('img');
                 img.src = photoSrc;
@@ -873,18 +773,14 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 photoContainer.innerHTML = `<svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>`;
             }
-            
             const techNameSpan = document.createElement('span');
             techNameSpan.className = 'text-center mt-1';
             techNameSpan.textContent = tech;
-
             techCell.appendChild(photoContainer);
             techCell.appendChild(techNameSpan);
             table.appendChild(techCell);
-
             const monthStart = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), 1));
             const monthEnd = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth() + 1, 0));
-            
             const techJobsInMonth = processedGlobalData.filter(job => {
                 if (job.Technician !== tech) return false;
                 const startDate = job.processedStartDate;
@@ -892,7 +788,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const endDate = job.processedEndDate || startDate;
                 return startDate <= monthEnd && endDate >= monthStart;
             });
-
             const jobsByStatus = {};
             statusOrder.forEach(s => jobsByStatus[s] = []);
             techJobsInMonth.forEach(job => {
@@ -901,7 +796,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     jobsByStatus[status].push(job);
                 }
             });
-
             let scheduledDates = new Set();
             let dailyJobsMap = new Map();
             techJobsInMonth.forEach(job => {
@@ -922,39 +816,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             });
-
             statusOrder.forEach(status => {
                 if (status === 'Cancelled' || status === 'Cleaning') return;
-
                 const statusCell = document.createElement('div');
                 statusCell.className = 'summary-cell';
                 if (status !== 'Available') {
                     const jobsToDisplay = jobsByStatus[status];
                     if (jobsToDisplay) {
                         jobsToDisplay.sort((a, b) => (a.processedStartDate || 0) - (b.processedStartDate || 0));
-
                         jobsToDisplay.forEach((job, index) => {
                             const jobDiv = document.createElement('div');
                             jobDiv.className = 'summary-job text-left p-1 flex items-start';
-
                             const workId = job['Work ID'] || 'N/A';
-                            
-                            // --- MODIFICATION START ---
-                            // Use the new truncate function for the customer name
                             const fullCustomerName = job.Customer || 'N/A';
                             const customer = truncateCustomerName(fullCustomerName);
-                            // --- MODIFICATION END ---
-                            
                             const type = job.Type || 'N/A';
-                            
                             const startDate = job.processedStartDate;
                             const endDate = job.processedEndDate || startDate;
-
                             let dateString;
                             if (startDate) {
                                 const startMonth = startDate.toLocaleString('default', { month: 'short', timeZone: 'UTC' });
                                 const endMonth = endDate.toLocaleString('default', { month: 'short', timeZone: 'UTC' });
-
                                 if (startDate.getTime() !== endDate.getTime()) {
                                     if (startMonth === endMonth) {
                                         dateString = `${startDate.getUTCDate()}-${endDate.getUTCDate()} ${endMonth}`;
@@ -967,7 +849,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             } else {
                                 dateString = 'N/A';
                             }
-                            
                             jobDiv.innerHTML = `
                                 <span class="w-6 shrink-0 text-right pr-2">${index + 1}.</span>
                                 <div class="job-details-wrapper">
@@ -990,7 +871,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 table.appendChild(statusCell);
             });
         });
-
         summaryTableContainer.appendChild(table);
     };
 
@@ -1003,16 +883,13 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const data = new Uint8Array(event.target.result);
                 const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                
                 const worklistSheetName = 'Work List';
                 const worksheet = workbook.Sheets[worklistSheetName];
                 if (!worksheet) throw new Error(`Sheet "${worklistSheetName}" not found in the Excel file.`);
                 globalJsonData = XLSX.utils.sheet_to_json(worksheet, { range: 1 });
-
                 const infoSheetName = 'Information';
                 const infoWorksheet = workbook.Sheets[infoSheetName];
                 technicianPhotos = {};
-
                 if (infoWorksheet) {
                     const infoData = XLSX.utils.sheet_to_json(infoWorksheet);
                     console.log("Found 'Information' sheet. Data:", infoData);
@@ -1020,7 +897,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     infoData.forEach(row => {
                         const nameKey = Object.keys(row).find(k => k.toLowerCase() === 'name');
                         const photoKey = Object.keys(row).find(k => k.toLowerCase() === 'photo');
-
                         if (nameKey && photoKey && row[nameKey] && row[photoKey]) {
                             const name = String(row[nameKey]).trim();
                             const photoUrl = String(row[photoKey]);
@@ -1036,26 +912,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     console.warn(`Sheet "${infoSheetName}" not found. No photos will be displayed.`);
                 }
-
-                // --- MODIFICATION START ---
-                // Manually add the 'Unassigned' technician's photo with the new link
-                technicianPhotos['Unassigned'] = 'https://i.postimg.cc/fLzfWbsL/Question-mark.png'; // Question mark icon
-                // --- MODIFICATION END ---
-
+                technicianPhotos['Unassigned'] = 'https://i.postimg.cc/fLzfWbsL/Question-mark.png';
                 processedGlobalData = globalJsonData.map(row => {
                     const newRow = {...row};
-                    
-                    // If Technician is blank but dates exist, assign to 'Unassigned'
                     if (!newRow.Technician && (newRow['Plan Start'] || newRow['Plan Finish'])) {
                         newRow.Technician = 'Unassigned';
                     }
-
                     let startDate = excelDateToJSDate(row['Plan Start']);
                     if (startDate) {
                         startDate.setUTCDate(startDate.getUTCDate() + 1);
                     }
                     newRow.processedStartDate = startDate;
-
                     let endDate = excelDateToJSDate(row['Plan Finish']);
                     if (endDate) {
                         endDate.setUTCDate(endDate.getUTCDate() + 1);
@@ -1066,10 +933,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     newRow.processedEndDate = endDate;
                     return newRow;
                 });
-
                 setupTechnicianColors(processedGlobalData);
                 const newEvents = {};
-
                 processedGlobalData.forEach(row => {
                     let startDate = row.processedStartDate;
                     if (startDate) {
@@ -1085,9 +950,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 fileNameEl.textContent = `Successfully loaded: ${file.name}`;
                 renderFilters(processedGlobalData);
                 updateViews();
-
                 ganttTab.click();
-                
             } catch (error) {
                 console.error("Error processing Excel file:", error);
                 fileNameEl.textContent = `Error: ${error.message}`;
@@ -1101,7 +964,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const avg = Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length;
         let summary = "";
         let recommendation = "";
-
         if (avg >= 9.5) {
             summary = "Exhibits outstanding performance across all metrics, serving as a model for the team.";
             recommendation = "Continue to mentor other technicians and lead by example. Explore opportunities for advanced projects or leadership roles.";
@@ -1124,7 +986,6 @@ document.addEventListener('DOMContentLoaded', () => {
             summary = "Shows significant challenges in meeting performance expectations across multiple areas.";
             recommendation = "Immediate intervention and a foundational training plan are crucial to address core skill gaps.";
         }
-        
         let lowestKey = 'P1';
         let highestKey = 'P1';
         if (Object.keys(scores).length > 0 && Object.values(scores).some(s => s > 0)) {
@@ -1135,32 +996,25 @@ document.addEventListener('DOMContentLoaded', () => {
             summary = `This technician's greatest strength appears to be in ${P_SCORE_MEANINGS[highestKey]}. ${summary}`;
             recommendation = `To improve, a focus on ${P_SCORE_MEANINGS[lowestKey]} is suggested. ${recommendation}`;
         }
-
-
         return `<strong>Summary:</strong> ${summary}<br><br><strong>Recommendation:</strong> ${recommendation}`;
     }
 
     function renderReportCharts() {
         Chart.register(ChartDataLabels);
-
         for(const key in chartInstances) {
             if(chartInstances[key]) chartInstances[key].destroy();
         }
         chartInstances = {};
-        
         technicianSkillsContainer.innerHTML = '';
         pscoreLegendEl.innerHTML = Object.entries(P_SCORE_MEANINGS)
             .map(([key, value]) => `<li><strong class="text-yellow-800">${key}:</strong> ${value}</li>`)
             .join('');
-
         if (!processedGlobalData || processedGlobalData.length === 0) {
             reportView.querySelector('.grid').innerHTML = '<p class="text-center col-span-full text-red-700">No data loaded. Please upload an Excel file.</p>';
             return;
         }
-
         const startDate = reportStartDateInput.value ? new Date(reportStartDateInput.value) : null;
         const endDate = reportEndDateInput.value ? new Date(reportEndDateInput.value) : null;
-
         const filteredReportData = processedGlobalData.filter(job => {
             if (!job.processedStartDate) return false;
             const jobDate = new Date(job.processedStartDate);
@@ -1168,12 +1022,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (endDate && jobDate > endDate) return false;
             return true;
         });
-        
         const reportTechsToExclude = ['Danuporn', 'Disorn', 'Tossapol', 'Unassigned'];
         const allTechs = Array.from(new Set(filteredReportData.map(r => r.Technician).filter(Boolean)))
             .filter(tech => !reportTechsToExclude.includes(tech))
             .sort();
-
         const techGradeDays = {};
         const allGrades = ['A','B','C','D'];
         filteredReportData.forEach(row => {
@@ -1181,7 +1033,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!allTechs.includes(tech)) return;
             const grade = (row.Grade || '').toString().toUpperCase();
             if (!tech || !allGrades.includes(grade)) return;
-            
             const start = row.processedStartDate;
             const end = row.processedEndDate || start;
             let days = 0;
@@ -1191,7 +1042,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!techGradeDays[tech]) techGradeDays[tech] = {A:0, B:0, C:0, D:0};
             techGradeDays[tech][grade] += days;
         });
-
         const barLabels = allTechs;
         const barData = allGrades.map(grade =>
             barLabels.map(t => (techGradeDays[t] ? techGradeDays[t][grade] : 0))
@@ -1216,15 +1066,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, title: { display: true, text: "Total Job Days" } } }
             }
         });
-
         const jobDurationLegendEl = document.getElementById('job-duration-legend');
         if (jobDurationLegendEl) {
-            const gradeMeanings = {
-                'A': 'Difficult',
-                'B': 'Medium',
-                'C': 'Easy',
-                'D': 'No Challenge'
-            };
+            const gradeMeanings = {'A': 'Difficult', 'B': 'Medium', 'C': 'Easy', 'D': 'No Challenge'};
             let legendHTML = '<div class="flex flex-wrap justify-center gap-x-4 gap-y-1">';
             for (const [grade, meaning] of Object.entries(gradeMeanings)) {
                 const color = gradeColors[grade] || '#cccccc';
@@ -1233,12 +1077,10 @@ document.addEventListener('DOMContentLoaded', () => {
             legendHTML += '</div>';
             jobDurationLegendEl.innerHTML = legendHTML;
         }
-
         const allPs = ['P1','P2','P3','P4','P5','P6'];
         allTechs.forEach(tech => {
             createTechSkillCard(tech, filteredReportData);
         });
-
         const techAvgScores = allTechs.map(tech => {
             const scores = filteredReportData
                 .filter(r => r.Technician === tech && r.Score && !isNaN(parseFloat(r.Score)))
@@ -1246,10 +1088,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
             return { tech, avg };
         }).sort((a,b) => b.avg - a.avg);
-
         const medals = ['🥇', '🥈', '🥉'];
         const rankingLabels = techAvgScores.map((t, i) => i < 3 ? `${medals[i]} ${t.tech}` : t.tech);
-
         chartInstances['tech-ranking-chart'] = new Chart(document.getElementById('tech-ranking-chart'), {
             type: 'bar',
             data: {
@@ -1265,42 +1105,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 indexAxis: 'y',
                 plugins: { 
                     legend: { display: false },
-                    datalabels: { 
-                        anchor: 'end', 
-                        align: 'right', 
-                        color: 'black', 
-                        font: { weight: 'bold'}, 
-                        formatter: (value) => value.toFixed(2) + '%'
-                    }
+                    datalabels: { anchor: 'end', align: 'right', color: 'black', font: { weight: 'bold'}, formatter: (value) => value.toFixed(2) + '%' }
                 },
-                scales: { 
-                    x: { 
-                        beginAtZero: true,
-                        max: 100,
-                        ticks: {
-                            callback: function(value) {
-                                return value + "%"
-                            }
-                        }
-                    } 
-                }
+                scales: { x: { beginAtZero: true, max: 100, ticks: { callback: function(value) { return value + "%" } } } }
             }
         });
-
         countryTechSelect.innerHTML = `<option value="All">All Technicians</option>` + allTechs.map(tech => `<option value="${tech}">${tech}</option>`).join('');
         const updateCountryPie = () => {
             const selectedTech = countryTechSelect.value;
             let dataPool = selectedTech === 'All' 
                 ? filteredReportData.filter(r => allTechs.includes(r.Technician)) 
                 : filteredReportData.filter(r => r.Technician === selectedTech);
-
             const countryData = {};
             dataPool.filter(r => r.Country).forEach(r => {
                 countryData[r.Country] = (countryData[r.Country] || 0) + 1;
             });
             const countryLabels = Object.keys(countryData);
             const countryCounts = Object.values(countryData);
-
             if(chartInstances['country-pie-chart']) chartInstances['country-pie-chart'].destroy();
             chartInstances['country-pie-chart'] = new Chart(document.getElementById('country-pie-chart'), {
                 type: 'pie',
@@ -1320,7 +1141,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         updateCountryPie();
         countryTechSelect.onchange = updateCountryPie;
-
         const allTypes = Array.from(new Set(filteredReportData.map(r=>r.Type).filter(Boolean)))
             .sort();
         chartInstances['job-type-chart'] = new Chart(document.getElementById('job-type-chart'), {
@@ -1344,7 +1164,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
             }
         });
-
         const allTechJobs = filteredReportData.filter(r => allTechs.includes(r.Technician) && r.Score && !isNaN(parseFloat(r.Score)) && parseFloat(r.Score) > 0);
         const allTechAvgs = allPs.map(p => {
             const pValues = allTechJobs.map(r => parseFloat(r[p])).filter(v => !isNaN(v));
@@ -1376,7 +1195,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function createTechSkillCard(tech, data) {
         const card = document.createElement('div');
         card.className = 'report-card p-4 rounded-lg shadow-md flex flex-col';
-        
         const cardHeader = document.createElement('div');
         cardHeader.className = 'flex items-center mb-2';
         const photoSrc = technicianPhotos[tech];
@@ -1390,45 +1208,35 @@ document.addEventListener('DOMContentLoaded', () => {
         name.className = 'font-bold text-md';
         name.textContent = tech;
         cardHeader.appendChild(name);
-        
         const filtersDiv = document.createElement('div');
         filtersDiv.className = 'flex gap-2 my-2 no-print';
-        
         const gradeSelect = document.createElement('select');
         gradeSelect.className = 'w-full p-1 border rounded-md text-xs';
         const customerSelect = document.createElement('select');
         customerSelect.className = 'w-full p-1 border rounded-md text-xs';
-        
         filtersDiv.append(gradeSelect, customerSelect);
-        
         const canvas = document.createElement('canvas');
         const summaryDiv = document.createElement('div');
         summaryDiv.className = 'mt-4 text-xs text-gray-600 border-t pt-2';
-        
         card.append(cardHeader, filtersDiv, canvas, summaryDiv);
         technicianSkillsContainer.appendChild(card);
-
         const updateCard = () => {
             const selectedGrade = gradeSelect.value;
             const selectedCustomer = customerSelect.value;
-            
             let jobs = data.filter(r =>
                 r.Technician === tech &&
                 r.Score && !isNaN(parseFloat(r.Score)) && parseFloat(r.Score) > 0
             );
-
             if (selectedGrade) {
                 jobs = jobs.filter(r => (r.Grade || '').toString().toUpperCase() === selectedGrade);
             }
             if (selectedCustomer) {
                 jobs = jobs.filter(r => r.Customer === selectedCustomer);
             }
-            
             const availableCustomers = [...new Set(jobs.map(j => j.Customer).filter(Boolean))].sort();
             const currentCustomerVal = customerSelect.value;
             customerSelect.innerHTML = `<option value="">All Customers</option>` + availableCustomers.map(c => `<option value="${c}">${c}</option>`).join('');
             customerSelect.value = availableCustomers.includes(currentCustomerVal) ? currentCustomerVal : "";
-
             const pScores = {};
             const avgs = ['P1','P2','P3','P4','P5','P6'].map(p => {
                 const pValues = jobs.map(r => parseFloat(r[p])).filter(v => !isNaN(v));
@@ -1436,12 +1244,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 pScores[p] = avg;
                 return avg;
             });
-            
             const avgScore = jobs.length ? (jobs.reduce((sum, r) => sum + (parseFloat(r.Score) || 0), 0) / jobs.length) : 0;
-            
             const chartId = `skill-radar-${tech}`;
             if(chartInstances[chartId]) chartInstances[chartId].destroy();
-            
             chartInstances[chartId] = new Chart(canvas, {
                 type: 'radar',
                 data: {
@@ -1463,20 +1268,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     scales: { r: { min: 0, max: 10, beginAtZero: true, ticks: { display: true } } }
                 }
             });
-
             summaryDiv.innerHTML = getPreconfiguredSummary(pScores);
         };
-
         const techJobs = data.filter(r => r.Technician === tech);
         const availableGrades = [...new Set(techJobs.map(j => (j.Grade || '').toString().toUpperCase()).filter(Boolean))].sort();
         gradeSelect.innerHTML = `<option value="">All Grades</option>` + availableGrades.map(g => `<option value="${g}">${g}</option>`).join('');
-        
         gradeSelect.onchange = updateCard;
         customerSelect.onchange = updateCard;
-
         updateCard();
     }
-
 
     const updateViews = () => {
         renderCalendar();
@@ -1492,27 +1292,70 @@ document.addEventListener('DOMContentLoaded', () => {
         printStyle.id = 'print-styles';
         printStyle.innerHTML = `
             @media print {
-                body * {
-                    visibility: hidden;
-                }
-                #${sectionId}, #${sectionId} * {
-                    visibility: visible;
-                }
-                #${sectionId} {
-                    position: absolute;
-                    left: 0;
-                    top: 0;
-                    width: 100%;
-                    margin: 0;
-                    padding: 1rem;
-                    box-shadow: none !important;
-                }
-            }
-        `;
+                body * { visibility: hidden; }
+                #${sectionId}, #${sectionId} * { visibility: visible; }
+                #${sectionId} { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 1rem; box-shadow: none !important; }
+            }`;
         document.head.appendChild(printStyle);
         window.print();
         document.getElementById('print-styles').remove();
     }
+
+    const downloadElementAsPng = async (elementId, fileName) => {
+        const element = document.getElementById(elementId);
+        if (!element) {
+            console.error(`Element with id ${elementId} not found.`);
+            return;
+        }
+
+        loadingOverlay.classList.remove('hidden');
+
+        try {
+            // Manually calculate the full scroll dimensions of the element
+            const elementHeight = element.scrollHeight;
+            const elementWidth = element.scrollWidth;
+
+            const canvas = await html2canvas(element, {
+                useCORS: true,
+                scale: 2,
+                // Explicitly set the canvas dimensions to the full scroll size
+                width: elementWidth,
+                height: elementHeight,
+                windowWidth: elementWidth,
+                windowHeight: elementHeight,
+                onclone: (clonedDoc) => {
+                    const targetElement = clonedDoc.getElementById(elementId);
+                    if (!targetElement) return;
+
+                    // Fix for Gantt chart bar text rendering and alignment
+                    if (elementId === 'gantt-print-section') {
+                        const bars = targetElement.querySelectorAll('.gantt-bar');
+                        bars.forEach(bar => {
+                            // Use grid for robust centering which html2canvas handles well
+                            bar.style.display = 'grid';
+                            bar.style.placeItems = 'center';
+                            // Use a basic, web-safe font to prevent rendering glitches
+                            bar.style.fontFamily = 'Arial, sans-serif';
+                        });
+                    }
+                }
+            });
+
+            const image = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = image;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+        } catch (error) {
+            console.error('Error generating PNG:', error);
+            alert('Sorry, an error occurred while generating the image.');
+        } finally {
+            loadingOverlay.classList.add('hidden');
+        }
+    };
 
     const updateTime = () => {
         const now = new Date();
@@ -1567,9 +1410,9 @@ document.addEventListener('DOMContentLoaded', () => {
     closeJobDetailModalBtn.addEventListener('click', hideJobDetailModal);
     jobDetailModal.addEventListener('click', (e) => { if (e.target === jobDetailModal) hideJobDetailModal(); });
     
-    printSummaryBtn.addEventListener('click', () => handlePrint('summary-section'));
+    printSummaryBtn.addEventListener('click', () => downloadElementAsPng('summary-section', 'monthly-summary.png'));
+    printGanttBtn.addEventListener('click', () => downloadElementAsPng('gantt-print-section', 'gantt-chart.png'));
     printCalendarBtn.addEventListener('click', () => handlePrint('calendar-print-section'));
-    printGanttBtn.addEventListener('click', () => handlePrint('gantt-print-section'));
     printReportBtn.addEventListener('click', () => handlePrint('report-print-section'));
     reportStartDateInput.addEventListener('change', renderReportCharts);
     reportEndDateInput.addEventListener('change', renderReportCharts);
